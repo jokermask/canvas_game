@@ -16,7 +16,8 @@ webpackJsonp([0,2],[
 
 	function initGame() {
 	  var engine = new _gameEngine.Engine('canvas');
-	  engine.addPlayer(10, 10, 10, null, 10);
+	  var x = Math.random() * 100;
+	  engine.addPlayer(x, 10, 10, null, 10);
 	  engine.addBarrier(100, 100, 50, 200);
 	  engine.start();
 	}
@@ -10138,6 +10139,10 @@ webpackJsonp([0,2],[
 	    //height and width
 	    this.bgHeight = this.canvas.height;
 	    this.bgWidth = this.canvas.width;
+	    //socket
+	    this.socket = io.connect("http://localhost:3000", ['websocket']);
+	    this.addPlayer = this.addPlayer.bind(this);
+	    this.initSocket();
 	  }
 
 	  _createClass(Engine, [{
@@ -10147,18 +10152,49 @@ webpackJsonp([0,2],[
 	    }
 
 	    //sprite
+	    //todo http://es6.ruanyifeng.com/#docs/class
 
 	  }, {
 	    key: 'addPlayer',
 	    value: function addPlayer(x, y, radius, imgUrl, speed) {
+	      var socket = this.socket;
 	      var player = new _player.Player(this.context, x, y, radius, imgUrl, speed);
 	      this.playerList.push(player);
+	      var data = {
+	        x: x,
+	        y: y,
+	        radius: radius,
+	        imgUrl: imgUrl,
+	        speed: speed
+	      };
+	      console.log(socket);
+	      socket.emit("addPlayer", data);
 	    }
 	  }, {
 	    key: 'addBarrier',
 	    value: function addBarrier(x, y, width, height) {
 	      var barrier = new _barrier.Barrier(this.context, x, y, width, height);
 	      this.barrierList.push(barrier);
+	    }
+	  }, {
+	    key: 'initSocket',
+	    value: function initSocket() {
+
+	      var addPlayer = this.addPlayer;
+
+	      console.log(this.socket);
+	      this.socket.on('connect', function () {
+
+	        this.on('message', function () {});
+
+	        this.on("addPlayer", function (data) {
+	          addPlayer(data.x, data.y, data.radius, data.imgUrl, data.speed);
+	        });
+
+	        this.on('disconnect', function () {
+	          console.log("disconnect");
+	        });
+	      });
 	    }
 	    //keylistener
 

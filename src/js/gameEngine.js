@@ -17,6 +17,10 @@ class Engine{
     //height and width
     this.bgHeight = this.canvas.height ;
     this.bgWidth = this.canvas.width ;
+    //socket
+    this.socket = io.connect("http://localhost:3000",['websocket']) ;
+    this.addPlayer = this.addPlayer.bind(this);
+    this.initSocket() ;
   }
 
   start(){
@@ -24,15 +28,48 @@ class Engine{
   }
 
   //sprite
+  //todo http://es6.ruanyifeng.com/#docs/class
   addPlayer(x,y,radius,imgUrl,speed){
+    let socket = this.socket ;
     var player = new Player(this.context,x,y,radius,imgUrl,speed)
     this.playerList.push(player) ;
+    var data = {
+      x:x,
+      y:y,
+      radius:radius,
+      imgUrl:imgUrl,
+      speed:speed
+    }
+    console.log(socket) ;
+    socket.emit("addPlayer",data) ;
   }
 
   addBarrier(x,y,width,height){
     var barrier = new Barrier(this.context,x,y,width,height) ;
     this.barrierList.push(barrier) ;
   }
+
+  initSocket(){
+
+    let addPlayer = this.addPlayer ;
+
+    console.log(this.socket) ;
+  this.socket.on('connect', function () {
+
+    this.on('message',function(){
+
+    });
+
+    this.on("addPlayer",function(data){
+        addPlayer(data.x,data.y,data.radius,data.imgUrl,data.speed) ;
+    });
+
+    this.on('disconnect',function(){
+      console.log("disconnect") ;
+    });
+  });
+
+}
   //keylistener
   keyPressed(keyCode,spriteList,barrierList){
     let listener = undefined ;

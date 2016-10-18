@@ -10,7 +10,9 @@ function init(){
 
 function initGame(){
   var engine = new Engine('canvas') ;
-  engine.addPlayer(10,10,10,null,10) ;
+  var x = (Math.random()*100) ;
+  engine.addPlayer(x,10,10,null,10) ;
   engine.addBarrier(100,100,50,200) ;
   engine.start() ;
 }
+
