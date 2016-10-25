@@ -3,8 +3,8 @@ import {Listener} from './listener'
 
 class Player extends Sprite{
 
-  constructor(context,x,y,radius,imgUrl,speed){
-    super(context,x,y,imgUrl,speed) ;
+  constructor(id,context,x,y,radius,imgUrl,speed){
+    super(id,context,x,y,imgUrl,speed) ;
     this.radius = radius ;
     this.drawImage() ;
     this.initListener() ;

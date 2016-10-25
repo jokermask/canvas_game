@@ -20,6 +20,8 @@ class Engine{
     //socket
     this.socket = io.connect("http://localhost:3000",['websocket']) ;
     this.addPlayer = this.addPlayer.bind(this);
+    this.listenerStart = this.listenerStart.bind(this) ;
+    this.initSocket = this.initSocket.bind(this) ;
     this.initSocket() ;
   }
 
@@ -29,39 +31,37 @@ class Engine{
 
   //sprite
   //todo http://es6.ruanyifeng.com/#docs/class
-  addPlayer(x,y,radius,imgUrl,speed){
+  addPlayer(data){
     let socket = this.socket ;
-    var player = new Player(this.context,x,y,radius,imgUrl,speed)
+    var player = new Player(data.id,this.context,data.x,data.y,data.radius,data.imgUrl,data.speed)
     this.playerList.push(player) ;
-    var data = {
-      x:x,
-      y:y,
-      radius:radius,
-      imgUrl:imgUrl,
-      speed:speed
-    }
     console.log(socket) ;
     socket.emit("addPlayer",data) ;
   }
 
-  addBarrier(x,y,width,height){
-    var barrier = new Barrier(this.context,x,y,width,height) ;
+  addBarrier(data){
+    var barrier = new Barrier(data.id,this.context,data.x,data.y,data.width,data.height) ;
     this.barrierList.push(barrier) ;
   }
 
   initSocket(){
 
+    let engine = this ;
     let addPlayer = this.addPlayer ;
 
-    console.log(this.socket) ;
-  this.socket.on('connect', function () {
+    this.socket.on('connect', function () {
 
     this.on('message',function(){
 
     });
-
+    //僵硬的this
     this.on("addPlayer",function(data){
-        addPlayer(data.x,data.y,data.radius,data.imgUrl,data.speed) ;
+      for(let i=0;i<engine.playerList.length;i++){
+        if(data.id==engine.playerList[i].getId()){
+          return ;
+        }
+      }
+      addPlayer(data) ;
     });
 
     this.on('disconnect',function(){
@@ -94,7 +94,6 @@ class Engine{
   }
 
   listenerStart(){
-    console.log('listener start') ;
     let keyPressed = this.keyPressed ;
     let spriteList = this.playerList ;
     let barrierList = this.barrierList ;
@@ -113,7 +112,6 @@ class Engine{
           keyList.pop();//先删除这个事件本身
           clearInterval(preesedTimer) ;
           let keyCode = keyList[keyList.length-1];//获得前一个事件
-          //todo 持续触发keyPressed
           preesedTimer = setInterval(function(){
             keyPressed(keyCode, spriteList, barrierList);
           },30);
@@ -126,7 +124,6 @@ class Engine{
           }
         }
       }
-      console.log("up"+keyList.length) ;
     });
   }
 

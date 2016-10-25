@@ -17,8 +17,23 @@ webpackJsonp([0,2],[
 	function initGame() {
 	  var engine = new _gameEngine.Engine('canvas');
 	  var x = Math.random() * 100;
-	  engine.addPlayer(x, 10, 10, null, 10);
-	  engine.addBarrier(100, 100, 50, 200);
+	  var id = Date.parse(new Date());
+	  console.log(id);
+	  engine.addPlayer({
+	    id: id,
+	    x: x,
+	    y: 10,
+	    radius: 10,
+	    imgUrl: null,
+	    speed: 10
+	  });
+	  engine.addBarrier({
+	    id: "100",
+	    x: 100,
+	    y: 100,
+	    width: 50,
+	    height: 200
+	  });
 	  engine.start();
 	}
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
@@ -10142,6 +10157,8 @@ webpackJsonp([0,2],[
 	    //socket
 	    this.socket = io.connect("http://localhost:3000", ['websocket']);
 	    this.addPlayer = this.addPlayer.bind(this);
+	    this.listenerStart = this.listenerStart.bind(this);
+	    this.initSocket = this.initSocket.bind(this);
 	    this.initSocket();
 	  }
 
@@ -10156,39 +10173,37 @@ webpackJsonp([0,2],[
 
 	  }, {
 	    key: 'addPlayer',
-	    value: function addPlayer(x, y, radius, imgUrl, speed) {
+	    value: function addPlayer(data) {
 	      var socket = this.socket;
-	      var player = new _player.Player(this.context, x, y, radius, imgUrl, speed);
+	      var player = new _player.Player(data.id, this.context, data.x, data.y, data.radius, data.imgUrl, data.speed);
 	      this.playerList.push(player);
-	      var data = {
-	        x: x,
-	        y: y,
-	        radius: radius,
-	        imgUrl: imgUrl,
-	        speed: speed
-	      };
 	      console.log(socket);
 	      socket.emit("addPlayer", data);
 	    }
 	  }, {
 	    key: 'addBarrier',
-	    value: function addBarrier(x, y, width, height) {
-	      var barrier = new _barrier.Barrier(this.context, x, y, width, height);
+	    value: function addBarrier(data) {
+	      var barrier = new _barrier.Barrier(data.id, this.context, data.x, data.y, data.width, data.height);
 	      this.barrierList.push(barrier);
 	    }
 	  }, {
 	    key: 'initSocket',
 	    value: function initSocket() {
 
+	      var engine = this;
 	      var addPlayer = this.addPlayer;
 
-	      console.log(this.socket);
 	      this.socket.on('connect', function () {
 
 	        this.on('message', function () {});
-
+	        //僵硬的this
 	        this.on("addPlayer", function (data) {
-	          addPlayer(data.x, data.y, data.radius, data.imgUrl, data.speed);
+	          for (var i = 0; i < engine.playerList.length; i++) {
+	            if (data.id == engine.playerList[i].getId()) {
+	              return;
+	            }
+	          }
+	          addPlayer(data);
 	        });
 
 	        this.on('disconnect', function () {
@@ -10251,7 +10266,6 @@ webpackJsonp([0,2],[
 	  }, {
 	    key: 'listenerStart',
 	    value: function listenerStart() {
-	      console.log('listener start');
 	      var keyPressed = this.keyPressed;
 	      var spriteList = this.playerList;
 	      var barrierList = this.barrierList;
@@ -10271,7 +10285,6 @@ webpackJsonp([0,2],[
 	              keyList.pop(); //先删除这个事件本身
 	              clearInterval(preesedTimer);
 	              var keyCode = keyList[keyList.length - 1]; //获得前一个事件
-	              //todo 持续触发keyPressed
 	              preesedTimer = setInterval(function () {
 	                keyPressed(keyCode, spriteList, barrierList);
 	              }, 30);
@@ -10285,7 +10298,6 @@ webpackJsonp([0,2],[
 	            }
 	          }
 	        }
-	        console.log("up" + keyList.length);
 	      });
 	    }
 	  }]);
@@ -10322,10 +10334,10 @@ webpackJsonp([0,2],[
 	var Player = function (_Sprite) {
 	  _inherits(Player, _Sprite);
 
-	  function Player(context, x, y, radius, imgUrl, speed) {
+	  function Player(id, context, x, y, radius, imgUrl, speed) {
 	    _classCallCheck(this, Player);
 
-	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Player).call(this, context, x, y, imgUrl, speed));
+	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Player).call(this, id, context, x, y, imgUrl, speed));
 
 	    _this.radius = radius;
 	    _this.drawImage();
@@ -10472,19 +10484,40 @@ webpackJsonp([0,2],[
 	  value: true
 	});
 
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Sprite = function Sprite(context, x, y, imgUrl, speed) {
-	  _classCallCheck(this, Sprite);
+	var Sprite = function () {
+	  function Sprite() {
+	    var id = arguments.length <= 0 || arguments[0] === undefined ? Date.parse(new Date()) : arguments[0];
+	    var context = arguments[1];
+	    var x = arguments[2];
+	    var y = arguments[3];
+	    var imgUrl = arguments[4];
+	    var speed = arguments[5];
 
-	  this.x = x;
-	  this.y = y;
-	  this.imgUrl = imgUrl;
-	  this.speed = speed || 10;
-	  this.listeners = [];
-	  this.behaviors = [];
-	  this.context = context;
-	};
+	    _classCallCheck(this, Sprite);
+
+	    this.x = x;
+	    this.y = y;
+	    this.id = id;
+	    this.imgUrl = imgUrl;
+	    this.speed = speed || 10;
+	    this.listeners = [];
+	    this.behaviors = [];
+	    this.context = context;
+	  }
+
+	  _createClass(Sprite, [{
+	    key: "getId",
+	    value: function getId() {
+	      return this.id;
+	    }
+	  }]);
+
+	  return Sprite;
+	}();
 
 	exports.Sprite = Sprite;
 
@@ -10551,10 +10584,10 @@ webpackJsonp([0,2],[
 	var Barrier = function (_Sprite) {
 	  _inherits(Barrier, _Sprite);
 
-	  function Barrier(context, x, y, width, height) {
+	  function Barrier(id, context, x, y, width, height) {
 	    _classCallCheck(this, Barrier);
 
-	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Barrier).call(this, context, x, y));
+	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Barrier).call(this, id, context, x, y));
 
 	    _this.width = width;
 	    _this.height = height;
